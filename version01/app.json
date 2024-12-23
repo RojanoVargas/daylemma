@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "version01",
-    "slug": "version01",
+    "name": "daylemma",
+    "slug": "daylemma",
+    "owner": "rojanovargas",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./app/assets/icon.png",
@@ -19,10 +20,18 @@
       "adaptiveIcon": {
         "foregroundImage": "./app/assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.daylemma.miapp"
     },
     "web": {
       "favicon": "./app/assets/favicon.png"
+    },
+    "extra": {
+      "expoClientId": "1039291459621-2nhldr1ufvism6ka9glsgg8vc5ahb73g.apps.googleusercontent.com",
+      "androidClientId": "1039291459621-k15hq34ga04p675r3d5t988hvi4pn42n.apps.googleusercontent.com",
+      "eas": {
+        "projectId": "9f675cc1-2a21-45ae-a6af-3a574cf239ec"
+      }
     }
   }
 }

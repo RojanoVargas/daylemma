@@ -2,8 +2,7 @@ import { StatusBar } from "expo-status-bar"
 import { LinearGradient } from "expo-linear-gradient"
 import React, { useState } from "react"
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native"
-import Header from "./app/screens/Header"
-import Footer from "./app/screens/Footer"
+// import Header from "./app/screens/Header"
 
 export default function App() {
 	console.log("App executed")
@@ -30,7 +29,7 @@ export default function App() {
 
 	return (
 		<>
-			<Header />
+			{/* <Header /> */}
 			<View style={styles.mainContainer}>
 				<LinearGradient
 					colors={["#fad0c4", "#ff9a9e", "#ff9a9e"]}
@@ -41,7 +40,7 @@ export default function App() {
 						onLongPress={onPressA}
 						activeOpacity={0.8}
 					>
-						<Text style={styles.h2}>Option A</Text>
+						<Text style={styles.h2}>Pizza w/ Pineapple🍍</Text>
 						<Text style={styles.paragraph}>
 							{total === 0
 								? "Hold to vote"
@@ -59,7 +58,7 @@ export default function App() {
 						onLongPress={onPressB}
 						activeOpacity={0.8}
 					>
-						<Text style={styles.h2}>Option B</Text>
+						<Text style={styles.h2}>Pizza margherita 🍕</Text>
 						<Text style={styles.paragraph}>
 							{total === 0
 								? "Hold to vote"

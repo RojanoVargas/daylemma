@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1039291459621",
+    "project_id": "daylemma-4d24a",
+    "storage_bucket": "daylemma-4d24a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1039291459621:android:a2ed21cb9082e9c4c6b7cc",
+        "android_client_info": {
+          "package_name": "com.daylemma.miapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1039291459621-k15hq34ga04p675r3d5t988hvi4pn42n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.daylemma.miapp",
+            "certificate_hash": "b7c30338d451dd6390aca9042d0754dc68fc7e6d"
+          }
+        },
+        {
+          "client_id": "1039291459621-2nhldr1ufvism6ka9glsgg8vc5ahb73g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5LutNGqcwRKvIlxunQgCOMirI5pKAB-8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1039291459621-2nhldr1ufvism6ka9glsgg8vc5ahb73g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
