@@ -69,7 +69,6 @@ export default function App() {
 				</LinearGradient>
 				<StatusBar style="auto" />
 			</View>
-      <Footer/>
 		</>
 	)
 }
