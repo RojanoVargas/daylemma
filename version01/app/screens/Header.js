@@ -1,10 +1,10 @@
 import React from "react";
 import { TouchableOpacity, StyleSheet, Text } from "react-native";
 
-export default function Header({ onPress }) {
+export default function Header({ onLoginPress, isAuthenticated }) {
   return (
-    <TouchableOpacity style={styles.floatingButton} onPress={onPress}>
-      <Text style={styles.buttonText}>👤</Text>
+    <TouchableOpacity style={styles.floatingButton} onPress={onLoginPress}>
+      <Text style={styles.buttonText}>{isAuthenticated ? '🥥' : '👤'}</Text>
     </TouchableOpacity>
   );
 }

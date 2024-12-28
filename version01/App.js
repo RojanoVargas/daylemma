@@ -1,8 +1,19 @@
 import { StatusBar } from "expo-status-bar"
 import { LinearGradient } from "expo-linear-gradient"
-import React, { useState } from "react"
-import { StyleSheet, Text, View, TouchableOpacity } from "react-native"
-// import Header from "./app/screens/Header"
+import React, { useState, useEffect } from "react"
+import {
+	StyleSheet,
+	Text,
+	View,
+	TouchableOpacity,
+	Modal,
+	TouchableWithoutFeedback
+} from "react-native"
+import Header from "./app/screens/Header"
+import SignInForm from "./app/screens/SignInForm"
+import SignUpForm from "./app/screens/SignUpForm"
+import { auth } from './config/firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export default function App() {
 	console.log("App executed")
@@ -27,9 +38,43 @@ export default function App() {
 
 	const styles = createStyles(flexOptionA, flexOptionB)
 
+	// Modal signin signup
+
+	const [modalVisible, setModalVisible] = useState(false)
+	const [isSignIn, setIsSignIn] = useState(true)
+	const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+	useEffect(() => {
+		const unsubscribe = onAuthStateChanged(auth, (user) => {
+		  if (user) {
+			setIsAuthenticated(true);
+		  } else {
+			setIsAuthenticated(false);
+		  }
+		});
+	
+		return () => unsubscribe();
+	  }, []);
+
+	const openModal = () => {
+		setModalVisible(true);
+	  };
+	
+	  const closeModal = () => {
+		setModalVisible(false);
+	  };
+	
+	  const switchToSignIn = () => {
+		setIsSignIn(true);
+	  };
+	
+	  const switchToSignUp = () => {
+		setIsSignIn(false);
+	  };
+
 	return (
 		<>
-			{/* <Header /> */}
+			<Header onLoginPress={openModal} isAuthenticated={isAuthenticated} />
 			<View style={styles.mainContainer}>
 				<LinearGradient
 					colors={["#fad0c4", "#ff9a9e", "#ff9a9e"]}
@@ -66,6 +111,35 @@ export default function App() {
 						</Text>
 					</TouchableOpacity>
 				</LinearGradient>
+				<Modal
+					animationType="slide"
+					transparent={true}
+					visible={modalVisible}
+					onRequestClose={closeModal}
+				>
+					<TouchableWithoutFeedback onPress={closeModal}>
+						<View style={styles.modalOverlay}>
+							<TouchableWithoutFeedback>
+								<View style={styles.modalContainer}>
+									{isSignIn ? (
+										<SignInForm
+											onClose={closeModal}
+											switchToSignUp={switchToSignUp}
+											setIsAuthenticated={setIsAuthenticated}
+										/>
+									) : (
+										<SignUpForm
+											onClose={closeModal}
+											switchToSignIn={switchToSignIn}
+											setIsAuthenticated={setIsAuthenticated}
+										/>
+									)}
+								</View>
+							</TouchableWithoutFeedback>
+						</View>
+					</TouchableWithoutFeedback>
+				</Modal>
+
 				<StatusBar style="auto" />
 			</View>
 		</>
@@ -112,5 +186,17 @@ const createStyles = () =>
 			height: 4,
 			width: "100%",
 			backgroundColor: "#000",
+		},
+		modalOverlay: {
+			flex: 1,
+			justifyContent: "center",
+			alignItems: "center",
+			backgroundColor: "rgba(0,0,0,0)",
+		},
+		modalContainer: {
+			width: "80%",
+			padding: 20,
+			backgroundColor: "white",
+			borderRadius: 10,
 		},
 	})
