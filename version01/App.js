@@ -1,27 +1,117 @@
 import { StatusBar } from "expo-status-bar"
 import { LinearGradient } from "expo-linear-gradient"
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import {
 	StyleSheet,
 	Text,
 	View,
 	TouchableOpacity,
 	Modal,
-	TouchableWithoutFeedback
+	TouchableWithoutFeedback,
+	Animated,
 } from "react-native"
+import { auth } from "./config/firebaseConfig"
+import { loadFonts } from "./config/fontsConfig"; // Importa la función de carga de fuentes
+import * as Font from 'expo-font';
+
+import { onAuthStateChanged, signOut } from "firebase/auth"
 import Header from "./app/screens/Header"
 import SignInForm from "./app/screens/SignInForm"
 import SignUpForm from "./app/screens/SignUpForm"
-import { auth } from './config/firebaseConfig';
-import { onAuthStateChanged } from 'firebase/auth';
+import { fetchDilemma, updateVotes } from "./fetch/DataFetcher"
 
 export default function App() {
 	console.log("App executed")
+
+	// const [dilemma, setDilemma] = useState(null)
+	const dilemmaId = "2024-12-28"
 	const [countA, setCountA] = useState(0)
 	const [countB, setCountB] = useState(0)
+	const buttonScale = useRef(new Animated.Value(1)).current
+	const [modalVisible, setModalVisible] = useState(false)
+	const [isSignIn, setIsSignIn] = useState(true)
+	const [isAuthenticated, setIsAuthenticated] = useState(false)
+	const [fontLoaded, setFontLoaded] = useState(false);
 
-	const onPressA = () => setCountA((prevCount) => prevCount + 1)
-	const onPressB = () => setCountB((prevCount) => prevCount + 1)
+  useEffect(() => {
+    const loadFonts = async () => {
+      try {
+        await Font.loadAsync({
+          'my-custom-font': require('./app/assets/fonts/gordqucikblack-p7erv.ttf'),
+        });
+        setFontLoaded(true);
+      } catch (error) {
+        console.error('Error loading fonts', error);
+      }
+    };
+
+    loadFonts();
+  }, []);
+
+	const fetchData = async () => {
+		try {
+			const data = await fetchDilemma(dilemmaId)
+			setCountA(data.aVotes)
+			setCountB(data.bVotes)
+		} catch (error) {
+			console.error("Error fetching the dilemma:", error)
+		}
+	}
+
+	useEffect(() => {
+		fetchData()
+	}, [dilemmaId])
+
+	const onPressA = () => {
+		if (!isAuthenticated) {
+			animateButton()
+		}
+	}
+
+	const onLongPressA = async () => {
+		if (isAuthenticated) {
+			try {
+				await updateVotes(dilemmaId, "aVotes")
+				// setCountA((prevCount) => prevCount + 1)
+				await fetchData()
+			} catch (error) {
+				console.error("Error updating votes for A:", error)
+			}
+		}
+	}
+
+	const onPressB = () => {
+		if (!isAuthenticated) {
+			animateButton()
+		}
+	}
+
+	const onLongPressB = async () => {
+		if (isAuthenticated) {
+			try {
+				await updateVotes(dilemmaId, "bVotes")
+				// setCountB((prevCount) => prevCount + 1)
+				await fetchData()
+			} catch (error) {
+				console.error("Error updating votes for B:", error)
+			}
+		}
+	}
+
+	const animateButton = () => {
+		Animated.sequence([
+			Animated.timing(buttonScale, {
+				toValue: 1.2,
+				duration: 100,
+				useNativeDriver: true,
+			}),
+			Animated.timing(buttonScale, {
+				toValue: 1,
+				duration: 100,
+				useNativeDriver: true,
+			}),
+		]).start()
+	}
 
 	const total = countA + countB
 
@@ -32,57 +122,69 @@ export default function App() {
 		flexOptionA = 1
 		flexOptionB = 1
 	} else {
-		flexOptionA = countA === 0 ? 0.1 : countA
-		flexOptionB = countB === 0 ? 0.1 : countB
+		flexOptionA = countA === 0 ? 0.5 : countA
+		flexOptionB = countB === 0 ? 0.5 : countB
 	}
 
 	const styles = createStyles(flexOptionA, flexOptionB)
 
 	// Modal signin signup
 
-	const [modalVisible, setModalVisible] = useState(false)
-	const [isSignIn, setIsSignIn] = useState(true)
-	const [isAuthenticated, setIsAuthenticated] = useState(false)
-
 	useEffect(() => {
 		const unsubscribe = onAuthStateChanged(auth, (user) => {
-		  if (user) {
-			setIsAuthenticated(true);
-		  } else {
-			setIsAuthenticated(false);
-		  }
-		});
-	
-		return () => unsubscribe();
-	  }, []);
+			if (user) {
+				setIsAuthenticated(true)
+			} else {
+				setIsAuthenticated(false)
+			}
+		})
+
+		return () => unsubscribe()
+	}, [])
 
 	const openModal = () => {
-		setModalVisible(true);
-	  };
-	
-	  const closeModal = () => {
-		setModalVisible(false);
-	  };
-	
-	  const switchToSignIn = () => {
-		setIsSignIn(true);
-	  };
-	
-	  const switchToSignUp = () => {
-		setIsSignIn(false);
-	  };
+		setModalVisible(true)
+	}
+
+	const closeModal = () => {
+		setModalVisible(false)
+	}
+
+	const switchToSignIn = () => {
+		setIsSignIn(true)
+	}
+
+	const switchToSignUp = () => {
+		setIsSignIn(false)
+	}
+	const handleAuthenticatedPress = () => {
+		signOut(auth)
+			.then(() => {
+				setIsAuthenticated(false)
+				console.log("User signed out")
+			})
+			.catch((error) => {
+				console.error("Error signing out:", error)
+			})
+	}
 
 	return (
 		<>
-			<Header onLoginPress={openModal} isAuthenticated={isAuthenticated} />
+			<Header
+				onLoginPress={openModal}
+				isAuthenticated={isAuthenticated}
+				onAuthenticatedPress={handleAuthenticatedPress}
+				buttonScale={buttonScale}
+			/>
 			<View style={styles.mainContainer}>
 				<LinearGradient
-					colors={["#fad0c4", "#ff9a9e", "#ff9a9e"]}
+					colors={["#ff9a9e", "#ff9a9e", "#ff9a9e"]}
 					style={[styles.containerOptionA, { flex: flexOptionA }]}
 				>
 					<TouchableOpacity
 						style={styles.touchable}
-						onLongPress={onPressA}
+						onPress={onPressA}
+						onLongPress={onLongPressA}
 						activeOpacity={0.8}
 					>
 						<Text style={styles.h2}>Pizza w/ Pineapple🍍</Text>
@@ -95,15 +197,16 @@ export default function App() {
 				</LinearGradient>
 				<View style={styles.divider} />
 				<LinearGradient
-					colors={["#13547a", "#13547a", "#80d0c7"]}
+					colors={["#13547a", "#13547a", "#13547a"]}
 					style={[styles.containerOptionB, { flex: flexOptionB }]}
 				>
 					<TouchableOpacity
 						style={styles.touchable}
-						onLongPress={onPressB}
+						onPress={onPressB}
+						onLongPress={onLongPressB}
 						activeOpacity={0.8}
 					>
-						<Text style={styles.h2}>Pizza margherita 🍕</Text>
+						<Text style={[styles.h2, {fontFamily: 'my-custom-font'}]}>Pizza margherita 🍕</Text>
 						<Text style={styles.paragraph}>
 							{total === 0
 								? "Hold to vote"
@@ -171,6 +274,7 @@ const createStyles = () =>
 			height: "100%",
 		},
 		h2: {
+			fontFamily: 'my-custom-font',
 			fontSize: 32,
 			textShadowColor: "rgba(0, 0, 0, 0.75)",
 			textShadowOffset: { width: -1, height: 1 },

@@ -1,12 +1,22 @@
 import React from "react";
-import { TouchableOpacity, StyleSheet, Text } from "react-native";
+import { View, TouchableOpacity, StyleSheet, Text, Animated } from "react-native";
 
-export default function Header({ onLoginPress, isAuthenticated }) {
+export default function Header({ onLoginPress, onAuthenticatedPress, isAuthenticated, buttonScale }) {
   return (
-    <TouchableOpacity style={styles.floatingButton} onPress={onLoginPress}>
-      <Text style={styles.buttonText}>{isAuthenticated ? '🥥' : '👤'}</Text>
-    </TouchableOpacity>
-  );
+    <View style={styles.container}>
+      {isAuthenticated ? (
+        <TouchableOpacity style={styles.floatingButton} onPress={onAuthenticatedPress}>
+          <Text style={styles.buttonText}>🍺</Text>
+        </TouchableOpacity>
+      ) : (
+        <Animated.View style={[styles.floatingButton, { transform: [{ scale: buttonScale }] }]}>
+          <TouchableOpacity onPress={onLoginPress}>
+            <Text style={styles.buttonText}>👤?</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+    </View>
+  )
 }
 
 const styles = StyleSheet.create({
