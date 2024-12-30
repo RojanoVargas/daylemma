@@ -9,16 +9,20 @@ import {
 	Modal,
 	TouchableWithoutFeedback,
 	Animated,
+	Alert
 } from "react-native"
 import { auth } from "./config/firebaseConfig"
-import { loadFonts } from "./config/fontsConfig"; // Importa la función de carga de fuentes
-import * as Font from 'expo-font';
+//import { loadFonts } from "./config/fontsConfig" // bring fonts from config. not in use now
+import { useFonts } from "expo-font"
+import * as SplashScreen from "expo-splash-screen"
 
 import { onAuthStateChanged, signOut } from "firebase/auth"
 import Header from "./app/screens/Header"
 import SignInForm from "./app/screens/SignInForm"
 import SignUpForm from "./app/screens/SignUpForm"
 import { fetchDilemma, updateVotes } from "./fetch/DataFetcher"
+
+SplashScreen.preventAutoHideAsync()
 
 export default function App() {
 	console.log("App executed")
@@ -27,75 +31,56 @@ export default function App() {
 	const dilemmaId = "2024-12-28"
 	const [countA, setCountA] = useState(0)
 	const [countB, setCountB] = useState(0)
+	const [votesByUser, setVotesByUser] = useState({});
 	const buttonScale = useRef(new Animated.Value(1)).current
 	const [modalVisible, setModalVisible] = useState(false)
 	const [isSignIn, setIsSignIn] = useState(true)
 	const [isAuthenticated, setIsAuthenticated] = useState(false)
-	const [fontLoaded, setFontLoaded] = useState(false);
+	const user = auth.currentUser
 
-  useEffect(() => {
-    const loadFonts = async () => {
-      try {
-        await Font.loadAsync({
-          'my-custom-font': require('./app/assets/fonts/gordqucikblack-p7erv.ttf'),
-        });
-        setFontLoaded(true);
-      } catch (error) {
-        console.error('Error loading fonts', error);
-      }
-    };
-
-    loadFonts();
-  }, []);
-
-	const fetchData = async () => {
-		try {
-			const data = await fetchDilemma(dilemmaId)
-			setCountA(data.aVotes)
-			setCountB(data.bVotes)
-		} catch (error) {
-			console.error("Error fetching the dilemma:", error)
-		}
-	}
+	const [fontsLoaded] = useFonts({
+		"my-custom-font": require("./app/assets/fonts/gordqucikblack-p7erv.ttf"),
+	})
 
 	useEffect(() => {
-		fetchData()
-	}, [dilemmaId])
-
-	const onPressA = () => {
-		if (!isAuthenticated) {
-			animateButton()
+		if (fontsLoaded) {
+			SplashScreen.hideAsync()
 		}
-	}
+	}, [fontsLoaded])
 
-	const onLongPressA = async () => {
+	useEffect(() => {
+		const unsubscribe = onAuthStateChanged(auth, (user) => {
+			setIsAuthenticated(!!user)
+		})
+
+		return () => unsubscribe()
+	}, [])
+
+	useEffect(() => {
 		if (isAuthenticated) {
-			try {
-				await updateVotes(dilemmaId, "aVotes")
-				// setCountA((prevCount) => prevCount + 1)
-				await fetchData()
-			} catch (error) {
-				console.error("Error updating votes for A:", error)
-			}
+		  fetchDilemma(dilemmaId, setCountA, setCountB).then((votesData) => {
+			setVotesByUser(votesData);
+		  });
 		}
-	}
+	  }, [isAuthenticated]);
 
-	const onPressB = () => {
-		if (!isAuthenticated) {
-			animateButton()
-		}
-	}
+	// useEffect(() => {
+	// 	const fetchData = async () => {
+	// 		try {
+	// 			const data = await fetchDilemma(dilemmaId, setCountA, setCountB) // Get the data and update the state
+	// 			setCountA(data.aVotes)
+	// 			setCountB(data.bVotes)
+	// 		} catch (error) {
+	// 			console.error("Error fetching the dilemma:", error)
+	// 		}
+	// 	}
 
-	const onLongPressB = async () => {
-		if (isAuthenticated) {
-			try {
-				await updateVotes(dilemmaId, "bVotes")
-				// setCountB((prevCount) => prevCount + 1)
-				await fetchData()
-			} catch (error) {
-				console.error("Error updating votes for B:", error)
-			}
-		}
+	// 	fetchData()
+	// }, [dilemmaId])
+
+
+	if (!fontsLoaded) {
+		return null // Return null while fonts are loading
 	}
 
 	const animateButton = () => {
@@ -113,6 +98,28 @@ export default function App() {
 		]).start()
 	}
 
+	const onLongPressVote = async (voteType) => {
+		if (!isAuthenticated) {
+			animateButton()
+			return
+		}
+
+		if (votesByUser[user.uid]) {
+			// Set the error message if the user has already voted
+			Alert.alert("You've already voted", "Day-lemma means one dilemma a day");
+			return // Prevent further action
+		}
+
+		try {
+			await updateVotes(dilemmaId, voteType, user.uid);
+			fetchDilemma(dilemmaId, setCountA, setCountB).then((votesData) => {
+			  setVotesByUser(votesData);
+			});
+		  } catch (error) {
+			console.error(`Error updating votes for ${voteType}:`, error);
+		  }
+	}
+
 	const total = countA + countB
 
 	let flexOptionA = countA
@@ -127,20 +134,6 @@ export default function App() {
 	}
 
 	const styles = createStyles(flexOptionA, flexOptionB)
-
-	// Modal signin signup
-
-	useEffect(() => {
-		const unsubscribe = onAuthStateChanged(auth, (user) => {
-			if (user) {
-				setIsAuthenticated(true)
-			} else {
-				setIsAuthenticated(false)
-			}
-		})
-
-		return () => unsubscribe()
-	}, [])
 
 	const openModal = () => {
 		setModalVisible(true)
@@ -160,6 +153,8 @@ export default function App() {
 	const handleAuthenticatedPress = () => {
 		signOut(auth)
 			.then(() => {
+				setCountA(0)
+				setCountB(0)
 				setIsAuthenticated(false)
 				console.log("User signed out")
 			})
@@ -178,16 +173,18 @@ export default function App() {
 			/>
 			<View style={styles.mainContainer}>
 				<LinearGradient
-					colors={["#ff9a9e", "#ff9a9e", "#ff9a9e"]}
+					colors={["#A6E1D7", "#A6E1D7", "#A6E1D7"]}
 					style={[styles.containerOptionA, { flex: flexOptionA }]}
 				>
 					<TouchableOpacity
 						style={styles.touchable}
-						onPress={onPressA}
-						onLongPress={onLongPressA}
+						onPress={() => {
+							if (!isAuthenticated) animateButton()
+						}}
+						onLongPress={() => onLongPressVote("aVotes")}
 						activeOpacity={0.8}
 					>
-						<Text style={styles.h2}>Pizza w/ Pineapple🍍</Text>
+						<Text style={styles.h2}>Pinneapple pizza🍍</Text>
 						<Text style={styles.paragraph}>
 							{total === 0
 								? "Hold to vote"
@@ -197,16 +194,20 @@ export default function App() {
 				</LinearGradient>
 				<View style={styles.divider} />
 				<LinearGradient
-					colors={["#13547a", "#13547a", "#13547a"]}
+					colors={["#F49A9D", "#F49A9D"]}
 					style={[styles.containerOptionB, { flex: flexOptionB }]}
 				>
 					<TouchableOpacity
 						style={styles.touchable}
-						onPress={onPressB}
-						onLongPress={onLongPressB}
+						onPress={() => {
+							if (!isAuthenticated) animateButton()
+						}}
+						onLongPress={() => onLongPressVote("bVotes")}
 						activeOpacity={0.8}
 					>
-						<Text style={[styles.h2, {fontFamily: 'my-custom-font'}]}>Pizza margherita 🍕</Text>
+						<Text style={[styles.h2, { fontFamily: "my-custom-font" }]}>
+							Pizza margherita🍕
+						</Text>
 						<Text style={styles.paragraph}>
 							{total === 0
 								? "Hold to vote"
@@ -274,17 +275,23 @@ const createStyles = () =>
 			height: "100%",
 		},
 		h2: {
-			fontFamily: 'my-custom-font',
-			fontSize: 32,
-			textShadowColor: "rgba(0, 0, 0, 0.75)",
-			textShadowOffset: { width: -1, height: 1 },
-			textShadowRadius: 10,
+			fontFamily: "my-custom-font",
+			fontSize: 50,
 			color: "white",
-			fontWeight: "700",
+			textTransform: "uppercase",
+			textAlign: "center",
+			textShadowColor: "black",
+			textShadowOffset: { width: 4, height: 2 },
+			textShadowRadius: 1,
 		},
 		paragraph: {
-			fontSize: 20,
-			fontWeight: "700",
+			fontSize: 38,
+			paddingTop: 20,
+			fontFamily: "my-custom-font",
+			color: "white",
+			textShadowColor: "black",
+			textShadowOffset: { width: 4, height: 2 },
+			textShadowRadius: 1,
 		},
 		divider: {
 			height: 4,
