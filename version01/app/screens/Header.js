@@ -1,11 +1,11 @@
 import React from "react";
 import { View, TouchableOpacity, StyleSheet, Text, Animated } from "react-native";
 
-export default function Header({ onLoginPress, onAuthenticatedPress, isAuthenticated, buttonScale }) {
+export default function Header({ onLoginPress, handleModal, isAuthenticated, buttonScale }) {
   return (
     <View style={styles.container}>
       {isAuthenticated ? (
-        <TouchableOpacity style={styles.floatingButton} onPress={onAuthenticatedPress}>
+        <TouchableOpacity style={styles.floatingButton} onPress={handleModal}>
           <Text style={styles.buttonText}>🍺</Text>
         </TouchableOpacity>
       ) : (
@@ -22,10 +22,10 @@ export default function Header({ onLoginPress, onAuthenticatedPress, isAuthentic
 const styles = StyleSheet.create({
   floatingButton: {
     position: "absolute",
-    top: 70, // Adjust to your desired position
-    right: 20, // Adjust to your desired position
-    width: 60, // Button size
-    height: 60, // Button size
+    top: 40, // Adjust to your desired position
+    right: 30, // Adjust to your desired position
+    width: 40, // Button size
+    height: 40, // Button size
     borderRadius: 30, // Circle shape
     backgroundColor: "white", // Button color
     justifyContent: "center",

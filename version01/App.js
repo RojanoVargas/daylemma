@@ -9,7 +9,9 @@ import {
 	Modal,
 	TouchableWithoutFeedback,
 	Animated,
-	Alert
+	Alert,
+	Button,
+	SafeAreaView,
 } from "react-native"
 import { auth } from "./config/firebaseConfig"
 //import { loadFonts } from "./config/fontsConfig" // bring fonts from config. not in use now
@@ -21,6 +23,7 @@ import Header from "./app/screens/Header"
 import SignInForm from "./app/screens/SignInForm"
 import SignUpForm from "./app/screens/SignUpForm"
 import { fetchDilemma, updateVotes } from "./fetch/DataFetcher"
+import UserProfileScreen from "./app/screens/UserProfileScreen"
 
 SplashScreen.preventAutoHideAsync()
 
@@ -31,12 +34,14 @@ export default function App() {
 	const dilemmaId = "2024-12-28"
 	const [countA, setCountA] = useState(0)
 	const [countB, setCountB] = useState(0)
-	const [votesByUser, setVotesByUser] = useState({});
+	const [votesByUser, setVotesByUser] = useState({})
+	const [hasVoted, setHasVoted] = useState(false)
 	const buttonScale = useRef(new Animated.Value(1)).current
 	const [modalVisible, setModalVisible] = useState(false)
 	const [isSignIn, setIsSignIn] = useState(true)
 	const [isAuthenticated, setIsAuthenticated] = useState(false)
 	const user = auth.currentUser
+	const [userModalVisible, setUserModalVisible] = useState(false)
 
 	const [fontsLoaded] = useFonts({
 		"my-custom-font": require("./app/assets/fonts/gordqucikblack-p7erv.ttf"),
@@ -57,12 +62,14 @@ export default function App() {
 	}, [])
 
 	useEffect(() => {
-		if (isAuthenticated) {
-		  fetchDilemma(dilemmaId, setCountA, setCountB).then((votesData) => {
-			setVotesByUser(votesData);
-		  });
+		if (isAuthenticated && !hasVoted) {
+			fetchDilemma(dilemmaId, setCountA, setCountB).then((votesData) => {
+				setVotesByUser(votesData)
+				setCountA(0)
+				setCountB(0)
+			})
 		}
-	  }, [isAuthenticated]);
+	}, [isAuthenticated, hasVoted])
 
 	// useEffect(() => {
 	// 	const fetchData = async () => {
@@ -77,7 +84,6 @@ export default function App() {
 
 	// 	fetchData()
 	// }, [dilemmaId])
-
 
 	if (!fontsLoaded) {
 		return null // Return null while fonts are loading
@@ -101,23 +107,25 @@ export default function App() {
 	const onLongPressVote = async (voteType) => {
 		if (!isAuthenticated) {
 			animateButton()
+			openModal()
 			return
 		}
 
 		if (votesByUser[user.uid]) {
 			// Set the error message if the user has already voted
-			Alert.alert("You've already voted", "Day-lemma means one dilemma a day");
+			Alert.alert("You've already voted", "Day-lemma means one dilemma a day")
 			return // Prevent further action
 		}
 
 		try {
-			await updateVotes(dilemmaId, voteType, user.uid);
+			await updateVotes(dilemmaId, voteType, user.uid)
 			fetchDilemma(dilemmaId, setCountA, setCountB).then((votesData) => {
-			  setVotesByUser(votesData);
-			});
-		  } catch (error) {
-			console.error(`Error updating votes for ${voteType}:`, error);
-		  }
+				setVotesByUser(votesData)
+				setHasVoted(true)
+			})
+		} catch (error) {
+			console.error(`Error updating votes for ${voteType}:`, error)
+		}
 	}
 
 	const total = countA + countB
@@ -150,12 +158,13 @@ export default function App() {
 	const switchToSignUp = () => {
 		setIsSignIn(false)
 	}
-	const handleAuthenticatedPress = () => {
+	const SignOut = () => {
 		signOut(auth)
 			.then(() => {
 				setCountA(0)
 				setCountB(0)
 				setIsAuthenticated(false)
+				setUserModalVisible(false)
 				console.log("User signed out")
 			})
 			.catch((error) => {
@@ -163,14 +172,20 @@ export default function App() {
 			})
 	}
 
+	const handleModal = () => {
+		setUserModalVisible(true)
+	}
+
 	return (
 		<>
-			<Header
-				onLoginPress={openModal}
-				isAuthenticated={isAuthenticated}
-				onAuthenticatedPress={handleAuthenticatedPress}
-				buttonScale={buttonScale}
-			/>
+			<SafeAreaView>
+				<Header
+					onLoginPress={openModal}
+					isAuthenticated={isAuthenticated}
+					handleModal={handleModal}
+					buttonScale={buttonScale}
+				/>
+			</SafeAreaView>
 			<View style={styles.mainContainer}>
 				<LinearGradient
 					colors={["#A6E1D7", "#A6E1D7", "#A6E1D7"]}
@@ -179,14 +194,17 @@ export default function App() {
 					<TouchableOpacity
 						style={styles.touchable}
 						onPress={() => {
-							if (!isAuthenticated) animateButton()
+							if (!isAuthenticated) {
+								animateButton()
+								openModal()
+							}
 						}}
 						onLongPress={() => onLongPressVote("aVotes")}
 						activeOpacity={0.8}
 					>
 						<Text style={styles.h2}>Pinneapple pizza🍍</Text>
 						<Text style={styles.paragraph}>
-							{total === 0
+							{total === 0 && !hasVoted
 								? "Hold to vote"
 								: `${((countA / total) * 100).toFixed(2)}%`}
 						</Text>
@@ -200,7 +218,10 @@ export default function App() {
 					<TouchableOpacity
 						style={styles.touchable}
 						onPress={() => {
-							if (!isAuthenticated) animateButton()
+							if (!isAuthenticated) {
+								animateButton()
+								openModal()
+							}
 						}}
 						onLongPress={() => onLongPressVote("bVotes")}
 						activeOpacity={0.8}
@@ -209,7 +230,7 @@ export default function App() {
 							Pizza margherita🍕
 						</Text>
 						<Text style={styles.paragraph}>
-							{total === 0
+							{total === 0 && !hasVoted
 								? "Hold to vote"
 								: `${((countB / total) * 100).toFixed(2)}%`}
 						</Text>
@@ -240,6 +261,40 @@ export default function App() {
 									)}
 								</View>
 							</TouchableWithoutFeedback>
+						</View>
+					</TouchableWithoutFeedback>
+				</Modal>
+				<Modal
+					animationType="slide"
+					transparent={true}
+					visible={userModalVisible}
+					onRequestClose={() => {
+						setUserModalVisible(false)
+					}}
+				>
+					<TouchableWithoutFeedback onPress={() => setUserModalVisible(false)}>
+						<View style={{ flex: 1 }}>
+							<View
+								style={{
+									flex: 1,
+									justifyContent: "center",
+									alignItems: "center",
+								}}
+							>
+								<TouchableWithoutFeedback>
+									<View
+										style={{
+											width: 300,
+											height: 400,
+											backgroundColor: "white",
+											padding: 20,
+										}}
+									>
+										<UserProfileScreen />
+										<Button title="Log out" onPress={() => SignOut()} />
+									</View>
+								</TouchableWithoutFeedback>
+							</View>
 						</View>
 					</TouchableWithoutFeedback>
 				</Modal>
