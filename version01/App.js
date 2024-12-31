@@ -10,7 +10,6 @@ import {
 	TouchableWithoutFeedback,
 	Animated,
 	Alert,
-	Button,
 	SafeAreaView,
 } from "react-native"
 import { auth } from "./config/firebaseConfig"
@@ -44,7 +43,7 @@ export default function App() {
 	const [userModalVisible, setUserModalVisible] = useState(false)
 
 	const [fontsLoaded] = useFonts({
-		"my-custom-font": require("./app/assets/fonts/gordqucikblack-p7erv.ttf"),
+		"gord-quick": require("./app/assets/fonts/gordqucikblack-p7erv.ttf"),
 	})
 
 	useEffect(() => {
@@ -71,22 +70,12 @@ export default function App() {
 		}
 	}, [isAuthenticated, hasVoted])
 
-	// useEffect(() => {
-	// 	const fetchData = async () => {
-	// 		try {
-	// 			const data = await fetchDilemma(dilemmaId, setCountA, setCountB) // Get the data and update the state
-	// 			setCountA(data.aVotes)
-	// 			setCountB(data.bVotes)
-	// 		} catch (error) {
-	// 			console.error("Error fetching the dilemma:", error)
-	// 		}
-	// 	}
-
-	// 	fetchData()
-	// }, [dilemmaId])
-
 	if (!fontsLoaded) {
 		return null // Return null while fonts are loading
+	}
+
+	const customFontStyles = {
+		fontFamily: "gord-quick",
 	}
 
 	const animateButton = () => {
@@ -226,9 +215,7 @@ export default function App() {
 						onLongPress={() => onLongPressVote("bVotes")}
 						activeOpacity={0.8}
 					>
-						<Text style={[styles.h2, { fontFamily: "my-custom-font" }]}>
-							Pizza margherita🍕
-						</Text>
+						<Text style={styles.h2}>Pizza margherita🍕</Text>
 						<Text style={styles.paragraph}>
 							{total === 0 && !hasVoted
 								? "Hold to vote"
@@ -251,12 +238,14 @@ export default function App() {
 											onClose={closeModal}
 											switchToSignUp={switchToSignUp}
 											setIsAuthenticated={setIsAuthenticated}
+											customFontStyles={customFontStyles}
 										/>
 									) : (
 										<SignUpForm
 											onClose={closeModal}
 											switchToSignIn={switchToSignIn}
 											setIsAuthenticated={setIsAuthenticated}
+											customFontStyles={customFontStyles}
 										/>
 									)}
 								</View>
@@ -290,8 +279,13 @@ export default function App() {
 											padding: 20,
 										}}
 									>
-										<UserProfileScreen />
-										<Button title="Log out" onPress={() => SignOut()} />
+										<UserProfileScreen customFontStyles={customFontStyles}  SignOut={SignOut}/>
+										{/* <TouchableOpacity
+											style={styles.button}
+											onPress={()=> SignOut()}
+										>
+											<Text style={styles.buttonText}>Log out</Text>
+										</TouchableOpacity> */}
 									</View>
 								</TouchableWithoutFeedback>
 							</View>
@@ -330,7 +324,7 @@ const createStyles = () =>
 			height: "100%",
 		},
 		h2: {
-			fontFamily: "my-custom-font",
+			fontFamily: "gord-quick",
 			fontSize: 50,
 			color: "white",
 			textTransform: "uppercase",
@@ -338,11 +332,12 @@ const createStyles = () =>
 			textShadowColor: "black",
 			textShadowOffset: { width: 4, height: 2 },
 			textShadowRadius: 1,
+			padding: 10 
 		},
 		paragraph: {
 			fontSize: 38,
 			paddingTop: 20,
-			fontFamily: "my-custom-font",
+			fontFamily: "gord-quick",
 			color: "white",
 			textShadowColor: "black",
 			textShadowOffset: { width: 4, height: 2 },
@@ -358,6 +353,24 @@ const createStyles = () =>
 			justifyContent: "center",
 			alignItems: "center",
 			backgroundColor: "rgba(0,0,0,0)",
+		},
+		button: {
+			backgroundColor: "#F49A9D",
+			padding: 10,
+			borderRadius: 5,
+			alignItems: "center",
+			marginTop: 5,
+			marginBottom: 15,
+			shadowColor: "black",
+			shadowOffset: { width: -2, height: -2 },
+			shadowRadius: 1,
+			elevation: 5,
+			shadowOpacity: 1
+		},
+		buttonText: {
+			color: "white", // Change this to your desired text color
+			fontSize: 16,
+			textTransform: "uppercase", // Apply textTransform here
 		},
 		modalContainer: {
 			width: "80%",

@@ -5,11 +5,11 @@
     "owner": "rojanovargas",
     "version": "1.1.0",
     "orientation": "portrait",
-    "icon": "./app/assets/daylemma-logo-beta.png",
+    "icon": "./app/assets/daylemma-logo-gamma.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./app/assets/daylemma-logo-beta.png",
+      "image": "./app/assets/daylemma-logo-gamma.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -18,13 +18,13 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./app/assets/daylemma-logo-beta.png",
+        "foregroundImage": "./app/assets/daylemma-logo-gamma.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.daylemma.miapp"
     },
     "web": {
-      "favicon": "./app/assets/daylemma-logo-beta.png"
+      "favicon": "./app/assets/daylemma-logo-gamma.png"
     },
     "extra": {
       "expoClientId": "1039291459621-2nhldr1ufvism6ka9glsgg8vc5ahb73g.apps.googleusercontent.com",
