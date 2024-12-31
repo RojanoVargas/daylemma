@@ -3,7 +3,7 @@
     "name": "daylemma",
     "slug": "daylemma",
     "owner": "rojanovargas",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./app/assets/daylemma-logo-gamma.png",
     "userInterfaceStyle": "light",
@@ -17,6 +17,7 @@
       "supportsTablet": true
     },
     "android": {
+      "versionCode": 3,
       "adaptiveIcon": {
         "foregroundImage": "./app/assets/daylemma-logo-gamma.png",
         "backgroundColor": "#ffffff"
