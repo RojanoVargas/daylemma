@@ -25,6 +25,7 @@ import { fetchDilemma, updateVotes } from "./fetch/DataFetcher"
 import UserProfileScreen from "./app/screens/UserProfileScreen"
 
 SplashScreen.preventAutoHideAsync()
+Alert.alert('Dear tester, new Daylemmas will come soon. Thank you so much for your help!')
 
 export default function App() {
 	console.log("App executed")
