@@ -3,7 +3,7 @@
     "name": "daylemma",
     "slug": "daylemma",
     "owner": "rojanovargas",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "orientation": "portrait",
     "icon": "./app/assets/daylemma-logo-gamma.png",
     "userInterfaceStyle": "light",
