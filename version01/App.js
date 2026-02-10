@@ -1,6 +1,6 @@
-import { StatusBar } from "expo-status-bar"
-import { LinearGradient } from "expo-linear-gradient"
-import React, { useState, useEffect, useRef } from "react"
+import { StatusBar } from "expo-status-bar";
+import { LinearGradient } from "expo-linear-gradient";
+import { useState, useEffect, useRef } from "react";
 import {
 	StyleSheet,
 	Text,
@@ -11,73 +11,122 @@ import {
 	Animated,
 	Alert,
 	SafeAreaView,
-} from "react-native"
-import { auth } from "./config/firebaseConfig"
+} from "react-native";
+import { auth } from "./config/firebaseConfig";
 //import { loadFonts } from "./config/fontsConfig" // bring fonts from config. not in use now
-import { useFonts } from "expo-font"
-import * as SplashScreen from "expo-splash-screen"
+import { useFonts } from "expo-font";
+import * as SplashScreen from "expo-splash-screen";
 
-import { onAuthStateChanged, signOut } from "firebase/auth"
-import Header from "./app/screens/Header"
-import SignInForm from "./app/screens/SignInForm"
-import SignUpForm from "./app/screens/SignUpForm"
-import { fetchDilemma, updateVotes } from "./fetch/DataFetcher"
-import UserProfileScreen from "./app/screens/UserProfileScreen"
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import Header from "./app/screens/Header";
+import SignInForm from "./app/screens/SignInForm";
+import SignUpForm from "./app/screens/SignUpForm";
+import {
+	fetchDilemma,
+	updateVotes,
+	fetchDilemmaContent,
+} from "./fetch/DataFetcher";
+import UserProfileScreen from "./app/screens/UserProfileScreen";
 
-SplashScreen.preventAutoHideAsync()
-Alert.alert('Dear tester, new Daylemmas will come soon. Thank you so much for your help!')
+SplashScreen.preventAutoHideAsync();
+Alert.alert(
+	"Dear tester, new Daylemmas will come soon. Thank you so much for your help!"
+);
 
 export default function App() {
-	console.log("App executed")
+	console.log("App executed");
 
-	// const [dilemma, setDilemma] = useState(null)
-	const dilemmaId = "2024-12-28"
-	const [countA, setCountA] = useState(0)
-	const [countB, setCountB] = useState(0)
-	const [votesByUser, setVotesByUser] = useState({})
-	const [hasVoted, setHasVoted] = useState(false)
-	const buttonScale = useRef(new Animated.Value(1)).current
-	const [modalVisible, setModalVisible] = useState(false)
-	const [isSignIn, setIsSignIn] = useState(true)
-	const [isAuthenticated, setIsAuthenticated] = useState(false)
-	const user = auth.currentUser
-	const [userModalVisible, setUserModalVisible] = useState(false)
+	// Generate dilemmaId based on current date
+	const getCurrentDilemmaId = () => {
+		const today = new Date();
+		const year = today.getFullYear();
+		const month = String(today.getMonth() + 1).padStart(2, "0");
+		const day = String(today.getDate()).padStart(2, "0");
+		return `${year}-${month}-${day}`;
+	};
+
+	const dilemmaId = getCurrentDilemmaId();
+	const [dilemma, setDilemma] = useState(null);
+	const [countA, setCountA] = useState(0);
+	const [countB, setCountB] = useState(0);
+	const [votesByUser, setVotesByUser] = useState({});
+	const [hasVoted, setHasVoted] = useState(false);
+	const buttonScale = useRef(new Animated.Value(1)).current;
+	const [modalVisible, setModalVisible] = useState(false);
+	const [isSignIn, setIsSignIn] = useState(true);
+	const [isAuthenticated, setIsAuthenticated] = useState(false);
+	const [userModalVisible, setUserModalVisible] = useState(false);
 
 	const [fontsLoaded] = useFonts({
 		"gord-quick": require("./app/assets/fonts/gordqucikblack-p7erv.ttf"),
-	})
+	});
 
 	useEffect(() => {
 		if (fontsLoaded) {
-			SplashScreen.hideAsync()
+			SplashScreen.hideAsync();
 		}
-	}, [fontsLoaded])
+	}, [fontsLoaded]);
+
+	useEffect(() => {
+		// Initialize the daily dilemma from database
+		const initializeDilemma = async () => {
+			try {
+				const dailyDilemma = await fetchDilemmaContent(dilemmaId);
+				setDilemma(dailyDilemma);
+				// Reset voting state when dilemma changes
+				setHasVoted(false);
+			} catch (error) {
+				console.error("Error initializing dilemma:", error);
+				// Set fallback dilemma
+				setDilemma({
+					optionA: "Option A 🤔",
+					optionB: "Option B 🤯",
+				});
+			}
+		};
+
+		initializeDilemma();
+	}, [dilemmaId]);
 
 	useEffect(() => {
 		const unsubscribe = onAuthStateChanged(auth, (user) => {
-			setIsAuthenticated(!!user)
-		})
+			setIsAuthenticated(!!user);
+		});
 
-		return () => unsubscribe()
-	}, [])
+		return () => unsubscribe();
+	}, []);
 
 	useEffect(() => {
-		if (isAuthenticated && !hasVoted) {
+		if (isAuthenticated) {
 			fetchDilemma(dilemmaId, setCountA, setCountB).then((votesData) => {
-				setVotesByUser(votesData)
-				setCountA(0)
-				setCountB(0)
-			})
+				setVotesByUser(votesData);
+				// Check if current user has already voted for this specific dilemma
+				const currentUser = auth.currentUser;
+				if (currentUser && votesData) {
+					// Encode email for consistent checking
+					const encodeEmail = (email) =>
+						email.replace(/[./]/g, (match) => encodeURIComponent(match));
+					const encodedEmail = encodeEmail(currentUser.email);
+
+					if (votesData[encodedEmail]) {
+						setHasVoted(true);
+					} else {
+						setHasVoted(false);
+					}
+				} else {
+					setHasVoted(false);
+				}
+			});
 		}
-	}, [isAuthenticated, hasVoted])
+	}, [isAuthenticated, dilemmaId]); // Added dilemmaId to dependencies
 
 	if (!fontsLoaded) {
-		return null // Return null while fonts are loading
+		return null; // Return null while fonts are loading
 	}
 
 	const customFontStyles = {
 		fontFamily: "gord-quick",
-	}
+	};
 
 	const animateButton = () => {
 		Animated.sequence([
@@ -91,80 +140,91 @@ export default function App() {
 				duration: 100,
 				useNativeDriver: true,
 			}),
-		]).start()
-	}
+		]).start();
+	};
 
 	const onLongPressVote = async (voteType) => {
 		if (!isAuthenticated) {
-			animateButton()
-			openModal()
-			return
+			animateButton();
+			openModal();
+			return;
 		}
 
-		if (votesByUser[user.uid]) {
-			// Set the error message if the user has already voted
-			Alert.alert("You've already voted", "Day-lemma means one dilemma a day")
-			return // Prevent further action
+		const currentUser = auth.currentUser;
+		if (!currentUser) {
+			Alert.alert("Authentication Error", "Please sign in to vote");
+			return;
+		}
+
+		// Encode email for consistent checking
+		const encodeEmail = (email) =>
+			email.replace(/[./]/g, (match) => encodeURIComponent(match));
+		const encodedEmail = encodeEmail(currentUser.email);
+
+		// Check if user has already voted for this specific dilemma
+		if (hasVoted || (votesByUser && votesByUser[encodedEmail])) {
+			Alert.alert("You've already voted", "Day-lemma means one dilemma a day");
+			return;
 		}
 
 		try {
-			await updateVotes(dilemmaId, voteType, user.uid)
+			await updateVotes(dilemmaId, voteType, currentUser.email);
 			fetchDilemma(dilemmaId, setCountA, setCountB).then((votesData) => {
-				setVotesByUser(votesData)
-				setHasVoted(true)
-			})
+				setVotesByUser(votesData);
+				setHasVoted(true);
+			});
 		} catch (error) {
-			console.error(`Error updating votes for ${voteType}:`, error)
+			console.error(`Error updating votes for ${voteType}:`, error);
 		}
-	}
+	};
 
-	const total = countA + countB
+	const total = countA + countB;
 
-	let flexOptionA = countA
-	let flexOptionB = countB
+	let flexOptionA = countA;
+	let flexOptionB = countB;
 
 	if (countA === 0 && countB === 0) {
-		flexOptionA = 1
-		flexOptionB = 1
+		flexOptionA = 1;
+		flexOptionB = 1;
 	} else {
-		flexOptionA = countA === 0 ? 0.5 : countA
-		flexOptionB = countB === 0 ? 0.5 : countB
+		flexOptionA = countA === 0 ? 0.5 : countA;
+		flexOptionB = countB === 0 ? 0.5 : countB;
 	}
 
-	const styles = createStyles(flexOptionA, flexOptionB)
+	const styles = createStyles(flexOptionA, flexOptionB);
 
 	const openModal = () => {
-		setModalVisible(true)
-	}
+		setModalVisible(true);
+	};
 
 	const closeModal = () => {
-		setModalVisible(false)
-	}
+		setModalVisible(false);
+	};
 
 	const switchToSignIn = () => {
-		setIsSignIn(true)
-	}
+		setIsSignIn(true);
+	};
 
 	const switchToSignUp = () => {
-		setIsSignIn(false)
-	}
+		setIsSignIn(false);
+	};
 	const SignOut = () => {
 		signOut(auth)
 			.then(() => {
-				setCountA(0)
-				setCountB(0)
-				setIsAuthenticated(false)
-				setUserModalVisible(false)
-				console.log("User signed out")
+				setCountA(0);
+				setCountB(0);
+				setIsAuthenticated(false);
+				setUserModalVisible(false);
+				console.log("User signed out");
 			})
 			.catch((error) => {
-				console.error("Error signing out:", error)
-			})
-	}
+				console.error("Error signing out:", error);
+			});
+	};
 
 	const handleModal = () => {
-		setUserModalVisible(true)
-	}
+		setUserModalVisible(true);
+	};
 
 	return (
 		<>
@@ -185,14 +245,14 @@ export default function App() {
 						style={styles.touchable}
 						onPress={() => {
 							if (!isAuthenticated) {
-								animateButton()
-								openModal()
+								animateButton();
+								openModal();
 							}
 						}}
 						onLongPress={() => onLongPressVote("aVotes")}
 						activeOpacity={0.8}
 					>
-						<Text style={styles.h2}>Pinneapple pizza🍍</Text>
+						<Text style={styles.h2}>{dilemma?.optionA || "Loading..."}</Text>
 						<Text style={styles.paragraph}>
 							{total === 0 && !hasVoted
 								? "Hold to vote"
@@ -209,14 +269,14 @@ export default function App() {
 						style={styles.touchable}
 						onPress={() => {
 							if (!isAuthenticated) {
-								animateButton()
-								openModal()
+								animateButton();
+								openModal();
 							}
 						}}
 						onLongPress={() => onLongPressVote("bVotes")}
 						activeOpacity={0.8}
 					>
-						<Text style={styles.h2}>Pizza margherita🍕</Text>
+						<Text style={styles.h2}>{dilemma?.optionB || "Loading..."}</Text>
 						<Text style={styles.paragraph}>
 							{total === 0 && !hasVoted
 								? "Hold to vote"
@@ -259,7 +319,7 @@ export default function App() {
 					transparent={true}
 					visible={userModalVisible}
 					onRequestClose={() => {
-						setUserModalVisible(false)
+						setUserModalVisible(false);
 					}}
 				>
 					<TouchableWithoutFeedback onPress={() => setUserModalVisible(false)}>
@@ -280,7 +340,10 @@ export default function App() {
 											padding: 20,
 										}}
 									>
-										<UserProfileScreen customFontStyles={customFontStyles}  SignOut={SignOut}/>
+										<UserProfileScreen
+											customFontStyles={customFontStyles}
+											SignOut={SignOut}
+										/>
 										{/* <TouchableOpacity
 											style={styles.button}
 											onPress={()=> SignOut()}
@@ -297,7 +360,7 @@ export default function App() {
 				<StatusBar style="auto" />
 			</View>
 		</>
-	)
+	);
 }
 
 const createStyles = () =>
@@ -333,7 +396,7 @@ const createStyles = () =>
 			textShadowColor: "black",
 			textShadowOffset: { width: 4, height: 2 },
 			textShadowRadius: 1,
-			padding: 10 
+			padding: 10,
 		},
 		paragraph: {
 			fontSize: 38,
@@ -366,7 +429,7 @@ const createStyles = () =>
 			shadowOffset: { width: -2, height: -2 },
 			shadowRadius: 1,
 			elevation: 5,
-			shadowOpacity: 1
+			shadowOpacity: 1,
 		},
 		buttonText: {
 			color: "white", // Change this to your desired text color
@@ -379,4 +442,4 @@ const createStyles = () =>
 			backgroundColor: "white",
 			borderRadius: 10,
 		},
-	})
+	});
